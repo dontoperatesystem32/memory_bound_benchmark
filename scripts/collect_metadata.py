@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import re
 import socket
@@ -29,7 +30,15 @@ SENSITIVE_HARDWARE_KEYS = {
 
 def run(command: list[str]) -> dict[str, Any]:
     try:
-        completed = subprocess.run(command, check=False, text=True, capture_output=True)
+        environment = os.environ.copy()
+        environment["LC_ALL"] = "C"
+        completed = subprocess.run(
+            command,
+            check=False,
+            text=True,
+            capture_output=True,
+            env=environment,
+        )
         return {
             "command": command,
             "returncode": completed.returncode,
@@ -75,6 +84,35 @@ def parse_sw_vers(text: str) -> dict[str, str]:
     return fields
 
 
+def parse_colon_fields(text: str) -> dict[str, str]:
+    fields: dict[str, str] = {}
+    for line in text.splitlines():
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        fields[key.strip()] = value.strip()
+    return fields
+
+
+def linux_os_release() -> dict[str, str]:
+    try:
+        return dict(platform.freedesktop_os_release())
+    except (AttributeError, OSError):
+        return {}
+
+
+def linux_memory() -> tuple[str, int | None]:
+    try:
+        fields = parse_colon_fields(Path("/proc/meminfo").read_text(encoding="utf-8"))
+    except OSError:
+        return "unavailable", None
+    match = re.match(r"^(\d+)\s+kB$", fields.get("MemTotal", ""), re.I)
+    if not match:
+        return "unavailable", None
+    memory_bytes = int(match.group(1)) * 1024
+    return f"{memory_bytes / 1024**3:.2f} GiB", memory_bytes
+
+
 def parse_memory_bytes(memory_text: str) -> int | None:
     match = re.match(r"^([0-9]+(?:\.[0-9]+)?)\s*(GB|MB|GiB|MiB)$", memory_text.strip(), re.I)
     if not match:
@@ -103,20 +141,47 @@ def binary_record(path: Path | None) -> dict[str, Any]:
     if path is None:
         return {"path": None, "available": False}
     exists = path.exists()
-    linkage = run(["otool", "-L", str(path)]) if exists and platform.system() == "Darwin" else None
+    linkage = None
+    linkage_tool = None
+    if exists and platform.system() == "Darwin":
+        linkage = run(["otool", "-L", str(path)])
+        linkage_tool = "otool -L"
+    elif exists and platform.system() == "Linux":
+        linkage = run(["ldd", str(path)])
+        linkage_tool = "ldd"
+    linkage_text = linkage["stdout"] if linkage and linkage["available"] else ""
+    runtime_names = sorted(set(re.findall(r"\blib(?:g)?omp(?:\.[^\s=]+)?", linkage_text)))
     return {
         "path": str(path),
         "available": exists,
-        "dynamic_libraries": linkage["stdout"].splitlines() if linkage and linkage["available"] else [],
-        "openmp_runtime_detected": bool(linkage and "libomp" in linkage["stdout"]),
+        "linkage_tool": linkage_tool,
+        "dynamic_libraries": linkage_text.splitlines(),
+        "openmp_runtime_detected": bool(runtime_names),
+        "openmp_runtimes": runtime_names,
+        "linkage_error": linkage["stderr"] if linkage and not linkage["available"] else "",
     }
 
 
 def write_markdown_summary(path: Path, metadata: dict[str, Any]) -> None:
     hardware = metadata["hardware"]
-    os_info = metadata["os"]["sw_vers"]
+    os_metadata = metadata["os"]
+    sw_vers = os_metadata["sw_vers"]
+    os_release = os_metadata.get("os_release", {})
     compilers = metadata["compilers"]
     binary = metadata["benchmark_binary"]
+
+    if sw_vers:
+        os_description = (
+            f"{sw_vers.get('ProductName', 'unavailable')} "
+            f"{sw_vers.get('ProductVersion', 'unavailable')} "
+            f"build {sw_vers.get('BuildVersion', 'unavailable')}"
+        )
+    elif os_release:
+        os_description = os_release.get("PRETTY_NAME", os_release.get("NAME", "Linux"))
+    else:
+        os_description = platform.system() or "unavailable"
+
+    runtime_description = ", ".join(binary.get("openmp_runtimes", [])) or "none detected"
 
     lines = [
         "# Machine Metadata Summary",
@@ -127,9 +192,9 @@ def write_markdown_summary(path: Path, metadata: dict[str, Any]) -> None:
         f"- Chip: {hardware['chip']}",
         f"- Cores: {hardware['total_cores']}",
         f"- Memory: {hardware['memory']}",
-        f"- OS: {os_info.get('ProductName', 'unavailable')} {os_info.get('ProductVersion', 'unavailable')} build {os_info.get('BuildVersion', 'unavailable')}",
+        f"- OS: {os_description}",
         f"- Benchmark binary: `{binary['path']}`",
-        f"- OpenMP runtime detected: {binary['openmp_runtime_detected']}",
+        f"- OpenMP runtime: {runtime_description}",
         "",
         "## Compilers",
         "",
@@ -174,21 +239,47 @@ def main() -> int:
     args = parser.parse_args()
 
     compiler_paths = args.compiler or ["clang", "/opt/homebrew/opt/llvm/bin/clang"]
-    sw_vers = run(["sw_vers"])
+    system = platform.system()
+    sw_vers = run(["sw_vers"]) if system == "Darwin" else {"available": False, "stdout": ""}
     uname = run(["uname", "-a"])
-    profiler = run(["system_profiler", "SPHardwareDataType"])
-    sysctl_queries = {
-        "machdep.cpu.brand_string": run(["sysctl", "-n", "machdep.cpu.brand_string"]),
-        "hw.physicalcpu": run(["sysctl", "-n", "hw.physicalcpu"]),
-        "hw.logicalcpu": run(["sysctl", "-n", "hw.logicalcpu"]),
-        "hw.memsize": run(["sysctl", "-n", "hw.memsize"]),
-    }
+    profiler = run(["system_profiler", "SPHardwareDataType"]) if system == "Darwin" else {"available": False, "stdout": ""}
+    lscpu = run(["lscpu"]) if system == "Linux" else {"available": False, "stdout": ""}
+    os_release = linux_os_release() if system == "Linux" else {}
+    sysctl_queries = {}
+    if system == "Darwin":
+        sysctl_queries = {
+            "machdep.cpu.brand_string": run(["sysctl", "-n", "machdep.cpu.brand_string"]),
+            "hw.physicalcpu": run(["sysctl", "-n", "hw.physicalcpu"]),
+            "hw.logicalcpu": run(["sysctl", "-n", "hw.logicalcpu"]),
+            "hw.memsize": run(["sysctl", "-n", "hw.memsize"]),
+        }
 
-    hardware = parse_system_profiler_hardware(profiler["stdout"], args.include_sensitive) if profiler["available"] else {}
-    memory_bytes = parse_memory_bytes(hardware.get("Memory", ""))
+    profiler_hardware = (
+        parse_system_profiler_hardware(profiler["stdout"], args.include_sensitive)
+        if profiler["available"]
+        else {}
+    )
+    lscpu_fields = parse_colon_fields(lscpu["stdout"]) if lscpu["available"] else {}
+    if system == "Linux":
+        memory, memory_bytes = linux_memory()
+        hardware_source = "lscpu and /proc/meminfo"
+        hardware_fields = lscpu_fields
+        model_name = lscpu_fields.get("Model name", "unavailable")
+        model_identifier = f"family {lscpu_fields.get('CPU family', '?')}, model {lscpu_fields.get('Model', '?')}"
+        chip = model_name
+        total_cores = lscpu_fields.get("Core(s) per socket", "unavailable")
+    else:
+        memory = profiler_hardware.get("Memory", "unavailable")
+        memory_bytes = parse_memory_bytes(memory)
+        hardware_source = "system_profiler SPHardwareDataType"
+        hardware_fields = profiler_hardware
+        model_name = profiler_hardware.get("Model Name", "unavailable")
+        model_identifier = profiler_hardware.get("Model Identifier", "unavailable")
+        chip = profiler_hardware.get("Chip", "unavailable")
+        total_cores = profiler_hardware.get("Total Number of Cores", "unavailable")
 
     metadata = {
-        "schema_version": 2,
+        "schema_version": 3,
         "machine_id": args.machine_id,
         "collected_at_utc": datetime.now(timezone.utc).isoformat(),
         "host": {
@@ -199,17 +290,33 @@ def main() -> int:
             "python": platform.python_version(),
         },
         "os": {
+            "system": system,
             "sw_vers": parse_sw_vers(sw_vers["stdout"]) if sw_vers["available"] else {},
+            "os_release": os_release,
             "uname": uname["stdout"] if uname["available"] else "unavailable",
         },
         "hardware": {
-            "source": "system_profiler SPHardwareDataType",
-            "fields": hardware,
-            "model_name": hardware.get("Model Name", "unavailable"),
-            "model_identifier": hardware.get("Model Identifier", "unavailable"),
-            "chip": hardware.get("Chip", "unavailable"),
-            "total_cores": hardware.get("Total Number of Cores", "unavailable"),
-            "memory": hardware.get("Memory", "unavailable"),
+            "source": hardware_source,
+            "fields": hardware_fields,
+            "model_name": model_name,
+            "model_identifier": model_identifier,
+            "chip": chip,
+            "total_cores": total_cores,
+            "logical_cpus": lscpu_fields.get("CPU(s)", "unavailable"),
+            "threads_per_core": lscpu_fields.get("Thread(s) per core", "unavailable"),
+            "sockets": lscpu_fields.get("Socket(s)", "unavailable"),
+            "architecture": lscpu_fields.get("Architecture", platform.machine()),
+            "cache_hierarchy": {
+                key: lscpu_fields[key]
+                for key in ("L1d", "L1i", "L2", "L3")
+                if key in lscpu_fields
+            },
+            "numa": {
+                key: value
+                for key, value in lscpu_fields.items()
+                if key.startswith("NUMA node")
+            },
+            "memory": memory,
             "memory_bytes_estimated": memory_bytes,
         },
         "sysctl": {
@@ -223,8 +330,8 @@ def main() -> int:
         "compilers": [compiler_record(path) for path in compiler_paths],
         "benchmark_binary": binary_record(args.binary),
         "manual_review_required": {
-            "cache_hierarchy": "Fill from reliable vendor/system documentation if needed for analysis.",
-            "memory_type_and_channels": "Fill manually if available; macOS system_profiler does not provide enough detail.",
+            "cache_hierarchy": "Verify automatically reported cache values against reliable system or vendor documentation.",
+            "memory_type_and_channels": "Fill manually if available; standard OS tools may not report reliable type/channel details.",
             "power_mode": "Record manually before each serious run, e.g. plugged in/battery, Low Power Mode off/on.",
             "thermal_conditions": "Record manually before each serious run, e.g. cool start, background apps minimized.",
             "run_environment": "Record terminal/session details and whether the machine was idle.",

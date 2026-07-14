@@ -176,3 +176,21 @@ This file records implementation decisions, setup findings, validation results, 
 - Fix: Added `_POSIX_C_SOURCE 200112L` before includes in `src/timer.c`.
 - Verification: Rebuilt successfully on macOS with Homebrew Clang/OpenMP after the change.
 - Next step: Pull/sync the updated `src/timer.c` on CachyOS and rebuild.
+
+## 2026-07-14 Intel validation and Linux metadata support
+
+### Initial Intel validation completed
+
+- Platform: CachyOS Linux on an Intel Core i5-12400F (x86-64).
+- Compiler/runtime: Clang 22.1.8 with dynamically linked `/usr/lib/libomp.so`.
+- Validation matrix: 81 measurements plus the CSV header for Triad, reduction, and strided traversal across three working-set sizes, thread counts 1/2/4, and three repetitions.
+- Large Triad working set: 8,388,608 elements and 192 MiB of reported data movement per iteration.
+- Median large-Triad bandwidth across three repetitions: approximately 28.75 GB/s at one thread, 32.58 GB/s at two threads, and 41.65 GB/s at four threads using the results supplied from the Intel machine.
+- Interpretation limitation: This establishes build, execution, structured output, and basic scaling behavior. It is not yet a controlled final measurement campaign.
+
+### Linux metadata collection added
+
+- Cause: The schema-v2 collector used macOS-only `system_profiler`, `sw_vers`, and `otool`, leaving Linux hardware fields unavailable and incorrectly reporting that OpenMP was not detected.
+- Fix: Added Linux collection using `platform.freedesktop_os_release()`, `lscpu`, `/proc/meminfo`, and `ldd`.
+- Linux fields now include OS description, CPU model and architecture, physical/logical topology, cache hierarchy, NUMA topology, memory capacity, compiler version, binary linkage, and detected `libomp` or `libgomp` runtime names.
+- Compatibility: Existing macOS collection remains supported; metadata schema version increased to 3.
