@@ -158,3 +158,13 @@ This file records implementation decisions, setup findings, validation results, 
 - Action: Added human-readable summary output at `benchmark_suite/results/mac_m4_local_metadata_summary.md`.
 - Result: Metadata now records MacBook Air `Mac16,12`, Apple M4, 10 cores with 4 performance and 6 efficiency cores, 16 GB memory, macOS 26.5.2 build 25F84, Apple Clang 21.0.0, Homebrew Clang 22.1.8, and detected Homebrew `libomp` linkage for `benchmark_suite/bin/membench`.
 - Manual review still required: cache hierarchy, memory type/channels, power mode, thermal conditions, and background activity before serious experiments.
+
+## 2026-07-14 Linux portability fix
+
+### `posix_memalign` declaration fixed for strict C builds
+
+- Context: The Intel x86-64 CachyOS build with `clang -std=c11` failed because `posix_memalign` was not declared.
+- Cause: On glibc/Linux, `posix_memalign` is hidden in strict C modes unless an appropriate POSIX feature-test macro is defined before system headers.
+- Fix: Added `_POSIX_C_SOURCE 200112L` before includes in `src/main.c`.
+- Verification: Rebuilt successfully on macOS with Homebrew Clang/OpenMP after the change.
+- Next step: Pull/sync this fix on the CachyOS machine and rebuild with `make -C memory_bound_benchmark openmp CC=clang`.
