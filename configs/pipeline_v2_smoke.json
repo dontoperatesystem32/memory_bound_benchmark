@@ -1,0 +1,21 @@
+{
+  "description": "Compact cross-machine validation for batched timing, parallel strided traversal, and schema-v2 plotting.",
+  "environment": {
+    "OMP_DYNAMIC": "FALSE",
+    "OMP_PROC_BIND": "FALSE"
+  },
+  "experiment": {
+    "kernels": ["triad", "strided"],
+    "elements": [1048576, 8388608],
+    "threads": [1, 2, 4],
+    "repetitions": 3,
+    "warmups": 1,
+    "iterations": {
+      "1048576": 32,
+      "8388608": 4
+    },
+    "strides": {
+      "strided": [1, 16]
+    }
+  }
+}

@@ -4,6 +4,7 @@
 #include "timer.h"
 
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +36,8 @@ typedef struct {
     size_t stride;
     int threads;
     int repetitions;
+    int iterations;
+    int warmups;
 } options;
 
 static void usage(const char *argv0) {
@@ -47,6 +50,8 @@ static void usage(const char *argv0) {
             "  --stride N                 stride for strided kernel; default 1\n"
             "  --threads N                requested OpenMP threads; default 1\n"
             "  --repetitions N            repetitions; default 3\n"
+            "  --iterations N             kernel calls per timed repetition; default 1\n"
+            "  --warmups N                untimed kernel calls before timing; default 1\n"
             "  --help                     show this help\n"
             "\n"
             "Kernels: copy, scale, add, triad, sequential, strided, reduction, stencil1d\n",
@@ -84,6 +89,8 @@ static int parse_args(int argc, char **argv, options *opts) {
     opts->stride = 1;
     opts->threads = 1;
     opts->repetitions = 3;
+    opts->iterations = 1;
+    opts->warmups = 1;
 
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--help") == 0) {
@@ -111,6 +118,14 @@ static int parse_args(int argc, char **argv, options *opts) {
             }
         } else if (strcmp(argv[i], "--repetitions") == 0 && i + 1 < argc) {
             if (parse_int(argv[++i], &opts->repetitions) != 0) {
+                return 1;
+            }
+        } else if (strcmp(argv[i], "--iterations") == 0 && i + 1 < argc) {
+            if (parse_int(argv[++i], &opts->iterations) != 0) {
+                return 1;
+            }
+        } else if (strcmp(argv[i], "--warmups") == 0 && i + 1 < argc) {
+            if (parse_int(argv[++i], &opts->warmups) != 0) {
                 return 1;
             }
         } else {
@@ -169,6 +184,7 @@ int main(int argc, char **argv) {
     }
 
 #ifdef USE_OPENMP
+    omp_set_dynamic(0);
     omp_set_num_threads(opts.threads);
 #else
     if (opts.threads != 1) {
@@ -202,16 +218,44 @@ int main(int argc, char **argv) {
     }
 
     if (needs_header) {
-        fprintf(csv, "source_benchmark,machine_id,kernel,elements,bytes,stride,threads,repetition,runtime_sec,bandwidth_gbps,checksum,compiler,compiler_flags\n");
+        fprintf(csv, "source_benchmark,machine_id,kernel,elements,bytes,stride,threads,repetition,warmups,iterations,runtime_sec,bandwidth_gbps,checksum,compiler,compiler_flags\n");
     }
 
     for (int rep = 1; rep <= opts.repetitions; ++rep) {
         initialize_arrays(a, b, c, d, opts.elements);
 
-        benchmark_result result;
+        benchmark_result result = {0};
+        for (int warmup = 0; warmup < opts.warmups; ++warmup) {
+            if (run_kernel(opts.kernel, a, b, c, d, opts.elements, opts.stride, &result) != 0) {
+                fprintf(stderr, "Unknown or invalid kernel: %s\n", opts.kernel);
+                if (csv != stdout) {
+                    fclose(csv);
+                }
+                free(a);
+                free(b);
+                free(c);
+                free(d);
+                return 2;
+            }
+        }
         double start = monotonic_seconds();
-        if (run_kernel(opts.kernel, a, b, c, d, opts.elements, opts.stride, &result) != 0) {
-            fprintf(stderr, "Unknown or invalid kernel: %s\n", opts.kernel);
+        for (int iteration = 0; iteration < opts.iterations; ++iteration) {
+            if (run_kernel(opts.kernel, a, b, c, d, opts.elements, opts.stride, &result) != 0) {
+                fprintf(stderr, "Unknown or invalid kernel: %s\n", opts.kernel);
+                if (csv != stdout) {
+                    fclose(csv);
+                }
+                free(a);
+                free(b);
+                free(c);
+                free(d);
+                return 2;
+            }
+        }
+        double elapsed = monotonic_seconds() - start;
+        result.checksum = checksum_for_kernel(result.name, a, b, c, d, opts.elements, result.checksum);
+        if (result.bytes_per_run > SIZE_MAX / (size_t)opts.iterations) {
+            fprintf(stderr, "Byte count overflow for requested iteration count\n");
             if (csv != stdout) {
                 fclose(csv);
             }
@@ -219,15 +263,14 @@ int main(int argc, char **argv) {
             free(b);
             free(c);
             free(d);
-            return 2;
+            return 1;
         }
-        double elapsed = monotonic_seconds() - start;
-        result.checksum = checksum_for_kernel(result.name, a, b, c, d, opts.elements, result.checksum);
-        double bandwidth_gbps = ((double)result.bytes_per_run / elapsed) / 1.0e9;
+        size_t total_bytes = result.bytes_per_run * (size_t)opts.iterations;
+        double bandwidth_gbps = ((double)total_bytes / elapsed) / 1.0e9;
 
-        fprintf(csv, "%s,%s,%s,%zu,%zu,%zu,%d,%d,%.9f,%.6f,%.17g,%s,%s\n",
+        fprintf(csv, "%s,%s,%s,%zu,%zu,%zu,%d,%d,%d,%d,%.9f,%.6f,%.17g,%s,%s\n",
                 opts.source_benchmark, opts.machine_id, result.name, opts.elements,
-                result.bytes_per_run, opts.stride, opts.threads, rep, elapsed,
+                total_bytes, opts.stride, opts.threads, rep, opts.warmups, opts.iterations, elapsed,
                 bandwidth_gbps, result.checksum, COMPILER_ID, COMPILER_FLAGS);
         fflush(csv);
     }

@@ -1,0 +1,30 @@
+{
+  "description": "Portable second-stage sweep for cache transitions, memory pressure, stride effects, and common-thread OpenMP scaling.",
+  "environment": {
+    "OMP_DYNAMIC": "FALSE",
+    "OMP_PROC_BIND": "FALSE"
+  },
+  "experiment": {
+    "kernels": ["sequential", "reduction", "strided", "triad", "stencil1d"],
+    "elements": [32768, 131072, 524288, 1048576, 2097152, 8388608, 33554432],
+    "threads": [1, 2, 4],
+    "kernel_threads": {
+      "sequential": [1]
+    },
+    "repetitions": 7,
+    "warmups": 1,
+    "shuffle_seed": 20260714,
+    "iterations": {
+      "32768": 4096,
+      "131072": 1024,
+      "524288": 256,
+      "1048576": 128,
+      "2097152": 64,
+      "8388608": 16,
+      "33554432": 4
+    },
+    "strides": {
+      "strided": [1, 2, 4, 8, 16, 32]
+    }
+  }
+}

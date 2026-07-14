@@ -5,6 +5,7 @@ TARGET := $(BIN_DIR)/membench
 
 CPPFLAGS ?= -Iinclude
 CFLAGS ?= -O3 -std=c11 -Wall -Wextra -pedantic
+CPPFLAGS += -DCOMPILER_FLAGS='"$(CFLAGS)"'
 LDFLAGS ?=
 LDLIBS ?=
 
@@ -31,4 +32,3 @@ dirs:
 
 clean:
 	rm -rf $(BUILD_DIR) $(BIN_DIR)
-

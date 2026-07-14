@@ -203,3 +203,36 @@ This file records implementation decisions, setup findings, validation results, 
 - Safety: `--machine-id` is required so results cannot silently inherit an incorrect platform-specific identifier.
 - Added configuration: `configs/intel_i5_12400f_custom_stream_compare.json` matches official STREAM with 20,000,000 elements, thread counts 1/2/4, and three custom repetitions.
 - Next validation: Run official STREAM and the matching custom Copy/Scale/Add/Triad matrix on the Intel machine, then generate normalized plots and comparison output.
+
+## 2026-07-14 Intel artifact analysis and second-stage methodology
+
+### Transferred Intel artifacts validated
+
+- Verified: 12 normalized official STREAM rows, 36 custom STREAM-style rows, 81 initial custom validation rows, three raw STREAM outputs, metadata, comparison report, and generated plots.
+- Official STREAM diagnostics: 20,000,000 elements per array, 457.8 MiB total allocation, ten executions per kernel, correct 1/2/4 thread counts, sufficient timer duration, and successful numerical validation.
+- Agreement: Custom Scale, Add, and Triad best bandwidth values are within approximately 2.1% of official STREAM across tested thread counts.
+- Repeatable discrepancy: Custom Copy is approximately 63% and 66% of official STREAM at one and two threads, then approximately 94% at four threads. Low custom-run variation suggests an implementation/compiler difference that requires separate investigation.
+- Stability: Large Triad groups have low variation, while several cache-resident groups exceed 10% coefficient of variation because each timed region is too short.
+- Analysis artifact: Added `docs/intel_baseline_analysis.md` for interim-report use.
+
+### Measurement corrections implemented
+
+- Corrected strided traversal to use an OpenMP reduction. Earlier multi-thread strided rows are invalid for scaling analysis and are retained only as development evidence.
+- Added `--iterations` to batch kernel calls inside one timed repetition; initialization and checksum remain outside the timed region.
+- Extended the normalized CSV schema with `iterations`; `bytes` now represents total useful bytes across the timed batch.
+- Disabled dynamic OpenMP teams in the custom executable so requested thread counts are not silently reduced.
+- Extended the experiment runner with repository-relative binary defaults, machine-ID override, controlled environment variables, per-kernel thread sets, per-size iteration counts, and multiple stride values.
+- Fixed Linux cache-summary extraction for `lscpu` labels such as `L1d cache` and `L3 cache`.
+- Added `configs/pilot_memory_sweep.json` as a shared second-stage configuration for both machines.
+- Corrected plotting groups so separate stride values cannot be averaged together; plot aggregation now uses repetition medians instead of means.
+- Added progress reporting and `--dry-run` matrix inspection to the experiment runner.
+- Added `configs/pipeline_v2_smoke.json`, a 54-row cross-machine gate that must pass before the full 1,372-row pilot sweep.
+- Added one explicit untimed kernel warm-up per repetition, analogous to official STREAM excluding its first execution, and recorded the warm-up count in CSV.
+- Affinity check: Homebrew `libomp` accepts `OMP_PLACES`/`OMP_PROC_BIND` on macOS but reports all processor sets as `undefined`; exact core placement cannot be verified there and remains a documented limitation.
+
+### Schema-v2 Mac smoke validation
+
+- Completed the 54-row `pipeline_v2_smoke.json` matrix and generated separate plots for stride 1, stride 16, and Triad.
+- Verified: batched byte counts, warm-up/iteration fields, recorded compiler flags, parallel strided checksums, repository-relative runner behavior, and median plot aggregation.
+- Remaining variability: several short/cache-resident Mac groups still exceed 10% coefficient of variation because thread placement cannot be verified and three smoke repetitions are intentionally limited.
+- Full-sweep adjustment: increased timed batches to approximately 3 GB of useful traffic for contiguous multi-stream kernels, retained seven independent repetitions, and added deterministic job shuffling with seed `20260714` to distribute order and thermal effects.

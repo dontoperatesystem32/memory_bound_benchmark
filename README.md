@@ -82,6 +82,33 @@ python3 scripts/plot_results.py \
   --outdir plots/mac_m4_validation
 ```
 
+## Cross-Machine Pipeline Gate
+
+After an OpenMP build, run the compact schema-v2 gate before a full experiment. Use the appropriate machine ID on each system:
+
+```sh
+python3 scripts/run_experiments.py \
+  --config configs/pipeline_v2_smoke.json \
+  --machine-id intel_i5_12400f \
+  --output results/intel_i5_12400f_pipeline_v2_smoke.csv
+
+python3 scripts/plot_results.py \
+  --input results/intel_i5_12400f_pipeline_v2_smoke.csv \
+  --outdir plots/intel_i5_12400f_pipeline_v2_smoke
+```
+
+Inspect the full pilot matrix without running it:
+
+```sh
+python3 scripts/run_experiments.py \
+  --config configs/pilot_memory_sweep.json \
+  --machine-id intel_i5_12400f \
+  --output results/intel_i5_12400f_pilot_memory_sweep.csv \
+  --dry-run
+```
+
+The full sweep is run only after the compact gate passes on both machines.
+
 ## Official STREAM Baseline
 
 Build and run official STREAM with LLVM/OpenMP, then normalize its output. Use the same repository-root workflow on every supported system:
@@ -148,5 +175,7 @@ The JSON file is the full machine-readable record. The Markdown summary is inten
 Normalized rows use this schema:
 
 ```text
-source_benchmark,machine_id,kernel,elements,bytes,stride,threads,repetition,runtime_sec,bandwidth_gbps,checksum,compiler,compiler_flags
+source_benchmark,machine_id,kernel,elements,bytes,stride,threads,repetition,warmups,iterations,runtime_sec,bandwidth_gbps,checksum,compiler,compiler_flags
 ```
+
+`warmups` records untimed kernel calls before measurement. `iterations` is the number of kernel calls batched inside one timed repetition. `bytes` records total useful bytes across that batch.

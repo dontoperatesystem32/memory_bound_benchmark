@@ -307,9 +307,14 @@ def main() -> int:
             "sockets": lscpu_fields.get("Socket(s)", "unavailable"),
             "architecture": lscpu_fields.get("Architecture", platform.machine()),
             "cache_hierarchy": {
-                key: lscpu_fields[key]
-                for key in ("L1d", "L1i", "L2", "L3")
-                if key in lscpu_fields
+                canonical: lscpu_fields[source_key]
+                for canonical, source_key in {
+                    "L1d": "L1d cache",
+                    "L1i": "L1i cache",
+                    "L2": "L2 cache",
+                    "L3": "L3 cache",
+                }.items()
+                if source_key in lscpu_fields
             },
             "numa": {
                 key: value

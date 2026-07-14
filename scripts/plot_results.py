@@ -8,7 +8,7 @@ import csv
 import html
 from collections import defaultdict
 from pathlib import Path
-from statistics import mean
+from statistics import median
 
 
 COLORS = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf"]
@@ -19,11 +19,23 @@ def load_rows(path: Path) -> list[dict]:
         return list(csv.DictReader(f))
 
 
-def grouped_means(rows: list[dict], keys: tuple[str, ...], value: str) -> dict[tuple[str, ...], float]:
+def grouped_medians(rows: list[dict], keys: tuple[str, ...], value: str) -> dict[tuple[str, ...], float]:
     groups: dict[tuple[str, ...], list[float]] = defaultdict(list)
     for row in rows:
         groups[tuple(row[k] for k in keys)].append(float(row[value]))
-    return {key: mean(values) for key, values in groups.items()}
+    return {key: median(values) for key, values in groups.items()}
+
+
+def workloads(rows: list[dict]) -> list[tuple[str, str]]:
+    return sorted({(row["kernel"], row.get("stride", "1")) for row in rows})
+
+
+def workload_name(kernel: str, stride: str) -> str:
+    return f"{kernel} (stride {stride})" if kernel == "strided" else kernel
+
+
+def workload_file_stem(kernel: str, stride: str) -> str:
+    return f"{kernel}_stride_{stride}" if kernel == "strided" else kernel
 
 
 def nice_range(values: list[float]) -> tuple[float, float]:
@@ -106,68 +118,77 @@ def svg_line_plot(
 
 
 def plot_bandwidth_vs_threads(rows: list[dict], outdir: Path) -> None:
-    data = grouped_means(rows, ("kernel", "elements", "threads"), "bandwidth_gbps")
-    for kernel in sorted({row["kernel"] for row in rows}):
+    data = grouped_medians(rows, ("kernel", "stride", "elements", "threads"), "bandwidth_gbps")
+    for kernel, stride in workloads(rows):
         series = []
-        for elements in sorted({row["elements"] for row in rows if row["kernel"] == kernel}, key=int):
+        for elements in sorted(
+            {row["elements"] for row in rows if row["kernel"] == kernel and row.get("stride", "1") == stride},
+            key=int,
+        ):
             points = [
                 (float(threads), bandwidth)
-                for (k, e, threads), bandwidth in data.items()
-                if k == kernel and e == elements
+                for (k, s, e, threads), bandwidth in data.items()
+                if k == kernel and s == stride and e == elements
             ]
             points.sort()
             series.append((f"{int(elements) * 8 / (1024 * 1024):.1f} MiB array", points))
         svg_line_plot(
-            f"{kernel}: bandwidth vs. thread count",
+            f"{workload_name(kernel, stride)}: bandwidth vs. thread count",
             "Threads",
             "Effective bandwidth (GB/s)",
             series,
-            outdir / f"{kernel}_bandwidth_vs_threads.svg",
+            outdir / f"{workload_file_stem(kernel, stride)}_bandwidth_vs_threads.svg",
         )
 
 
 def plot_runtime_vs_size(rows: list[dict], outdir: Path) -> None:
-    data = grouped_means(rows, ("kernel", "threads", "elements"), "runtime_sec")
-    for kernel in sorted({row["kernel"] for row in rows}):
+    data = grouped_medians(rows, ("kernel", "stride", "threads", "elements"), "runtime_sec")
+    for kernel, stride in workloads(rows):
         series = []
-        for threads in sorted({row["threads"] for row in rows if row["kernel"] == kernel}, key=int):
+        for threads in sorted(
+            {row["threads"] for row in rows if row["kernel"] == kernel and row.get("stride", "1") == stride},
+            key=int,
+        ):
             points = [
                 (float(int(elements) * 8 / (1024 * 1024)), runtime)
-                for (k, t, elements), runtime in data.items()
-                if k == kernel and t == threads
+                for (k, s, t, elements), runtime in data.items()
+                if k == kernel and s == stride and t == threads
             ]
             points.sort()
             series.append((f"{threads} threads", points))
         svg_line_plot(
-            f"{kernel}: runtime vs. working-set size",
+            f"{workload_name(kernel, stride)}: runtime vs. working-set size",
             "Input array size (MiB)",
             "Runtime (s)",
             series,
-            outdir / f"{kernel}_runtime_vs_size.svg",
+            outdir / f"{workload_file_stem(kernel, stride)}_runtime_vs_size.svg",
         )
 
 
 def plot_speedup_vs_threads(rows: list[dict], outdir: Path) -> None:
-    runtime = grouped_means(rows, ("kernel", "elements", "threads"), "runtime_sec")
-    for kernel in sorted({row["kernel"] for row in rows}):
+    runtime = grouped_medians(rows, ("kernel", "stride", "elements", "threads"), "runtime_sec")
+    for kernel, stride in workloads(rows):
         series = []
-        for elements in sorted({row["elements"] for row in rows if row["kernel"] == kernel}, key=int):
-            baseline = runtime.get((kernel, elements, "1"))
+        for elements in sorted(
+            {row["elements"] for row in rows if row["kernel"] == kernel and row.get("stride", "1") == stride},
+            key=int,
+        ):
+            baseline = runtime.get((kernel, stride, elements, "1"))
             if baseline is None:
                 continue
             points = [
                 (float(threads), baseline / value)
-                for (k, e, threads), value in runtime.items()
-                if k == kernel and e == elements
+                for (k, s, e, threads), value in runtime.items()
+                if k == kernel and s == stride and e == elements
             ]
             points.sort()
             series.append((f"{int(elements) * 8 / (1024 * 1024):.1f} MiB array", points))
         svg_line_plot(
-            f"{kernel}: speedup vs. thread count",
+            f"{workload_name(kernel, stride)}: speedup vs. thread count",
             "Threads",
             "Speedup over 1 thread",
             series,
-            outdir / f"{kernel}_speedup_vs_threads.svg",
+            outdir / f"{workload_file_stem(kernel, stride)}_speedup_vs_threads.svg",
         )
 
 
@@ -188,4 +209,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

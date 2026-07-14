@@ -117,10 +117,12 @@ static int kernel_strided(double *a, size_t elements, size_t stride, benchmark_r
         return 1;
     }
     double sum = 0.0;
-    size_t visits = 0;
+    const size_t visits = elements / stride + (elements % stride != 0);
+#ifdef USE_OPENMP
+#pragma omp parallel for reduction(+ : sum)
+#endif
     for (size_t i = 0; i < elements; i += stride) {
         sum += a[i];
-        ++visits;
     }
     result->name = "strided";
     result->bytes_per_run = visits * sizeof(double);
