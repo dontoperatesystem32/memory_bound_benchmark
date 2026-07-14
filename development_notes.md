@@ -194,3 +194,12 @@ This file records implementation decisions, setup findings, validation results, 
 - Fix: Added Linux collection using `platform.freedesktop_os_release()`, `lscpu`, `/proc/meminfo`, and `ldd`.
 - Linux fields now include OS description, CPU model and architecture, physical/logical topology, cache hierarchy, NUMA topology, memory capacity, compiler version, binary linkage, and detected `libomp` or `libgomp` runtime names.
 - Compatibility: Existing macOS collection remains supported; metadata schema version increased to 3.
+
+### Official STREAM wrapper made repository-relative
+
+- Fix: Removed assumptions that the wrapper is launched from the parent workspace and that Homebrew Clang is always present.
+- Intended workflow: Enter the benchmark repository and invoke `python3 scripts/run_stream_baseline.py` on any supported system. This is a project-wide repository convention, not Linux-specific behavior.
+- Behavior: Source, normalization-script, build, and result paths resolve from the benchmark repository; the compiler defaults to Homebrew Clang when present and otherwise to `clang`.
+- Safety: `--machine-id` is required so results cannot silently inherit an incorrect platform-specific identifier.
+- Added configuration: `configs/intel_i5_12400f_custom_stream_compare.json` matches official STREAM with 20,000,000 elements, thread counts 1/2/4, and three custom repetitions.
+- Next validation: Run official STREAM and the matching custom Copy/Scale/Add/Triad matrix on the Intel machine, then generate normalized plots and comparison output.

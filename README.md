@@ -16,36 +16,42 @@ The project is not intended to prove that one architecture is generally superior
 
 ## Build
 
+Run project commands from inside the benchmark repository:
+
+```sh
+cd memory_bound_benchmark
+```
+
 Serial build:
 
 ```sh
-make -C benchmark_suite
+make
 ```
 
 OpenMP build with Homebrew LLVM on macOS, after installing `llvm` and `libomp`:
 
 ```sh
-make -C benchmark_suite clean
-make -C benchmark_suite openmp CC=/opt/homebrew/opt/llvm/bin/clang
+make clean
+make openmp CC=/opt/homebrew/opt/llvm/bin/clang
 ```
 
 Linux LLVM/OpenMP build:
 
 ```sh
-make -C benchmark_suite clean
-make -C benchmark_suite openmp CC=clang
+make clean
+make openmp CC=clang
 ```
 
 ## Smoke Run
 
 ```sh
-benchmark_suite/bin/membench \
+./bin/membench \
   --machine-id local \
   --kernel triad \
   --elements 1000000 \
   --threads 1 \
   --repetitions 3 \
-  --csv benchmark_suite/results/smoke.csv
+  --csv results/smoke.csv
 ```
 
 ## Small Validation Run
@@ -53,50 +59,72 @@ benchmark_suite/bin/membench \
 Serial-only validation before OpenMP is configured:
 
 ```sh
-python3 benchmark_suite/scripts/run_experiments.py \
-  --config benchmark_suite/configs/mac_m4_serial_smoke.json \
-  --output benchmark_suite/results/mac_m4_serial_smoke.csv
+python3 scripts/run_experiments.py \
+  --config configs/mac_m4_serial_smoke.json \
+  --binary ./bin/membench \
+  --output results/mac_m4_serial_smoke.csv
 ```
 
 OpenMP validation after building with `make openmp`:
 
 ```sh
-python3 benchmark_suite/scripts/run_experiments.py \
-  --config benchmark_suite/configs/mac_m4_local.json \
-  --output benchmark_suite/results/mac_m4_validation.csv
+python3 scripts/run_experiments.py \
+  --config configs/mac_m4_local.json \
+  --binary ./bin/membench \
+  --output results/mac_m4_validation.csv
 ```
 
 ## Plot
 
 ```sh
-python3 benchmark_suite/scripts/plot_results.py \
-  --input benchmark_suite/results/mac_m4_validation.csv \
-  --outdir benchmark_suite/plots
+python3 scripts/plot_results.py \
+  --input results/mac_m4_validation.csv \
+  --outdir plots/mac_m4_validation
 ```
 
 ## Official STREAM Baseline
 
-Build and run official STREAM with Homebrew LLVM/OpenMP, then normalize its output:
+Build and run official STREAM with LLVM/OpenMP, then normalize its output. Use the same repository-root workflow on every supported system:
 
 ```sh
-python3 benchmark_suite/scripts/run_stream_baseline.py
+python3 scripts/run_stream_baseline.py \
+  --machine-id mac_m4_local \
+  --cc /opt/homebrew/opt/llvm/bin/clang
+```
+
+On a system where LLVM Clang is available as `clang`:
+
+```sh
+python3 scripts/run_stream_baseline.py \
+  --machine-id intel_i5_12400f \
+  --cc clang
 ```
 
 Run matching custom STREAM-style kernels:
 
 ```sh
-python3 benchmark_suite/scripts/run_experiments.py \
-  --config benchmark_suite/configs/mac_m4_custom_stream_compare.json \
-  --output benchmark_suite/results/custom_stream_mac_m4_compare.csv
+python3 scripts/run_experiments.py \
+  --config configs/mac_m4_custom_stream_compare.json \
+  --binary ./bin/membench \
+  --output results/custom_stream_mac_m4_compare.csv
+```
+
+Matching Intel custom STREAM-style run from inside the repository:
+
+```sh
+python3 scripts/run_experiments.py \
+  --config configs/intel_i5_12400f_custom_stream_compare.json \
+  --binary ./bin/membench \
+  --output results/custom_stream_intel_i5_12400f_compare.csv
 ```
 
 Compare official STREAM and custom STREAM-style bandwidths:
 
 ```sh
-python3 benchmark_suite/scripts/compare_stream_custom.py \
-  --stream benchmark_suite/results/stream_mac_m4_normalized.csv \
-  --custom benchmark_suite/results/custom_stream_mac_m4_compare.csv \
-  --output benchmark_suite/results/stream_vs_custom_mac_m4.md
+python3 scripts/compare_stream_custom.py \
+  --stream results/stream_mac_m4_local_normalized.csv \
+  --custom results/custom_stream_mac_m4_compare.csv \
+  --output results/stream_vs_custom_mac_m4.md
 ```
 
 ## Machine Metadata
@@ -104,13 +132,13 @@ python3 benchmark_suite/scripts/compare_stream_custom.py \
 Collect machine, compiler, and benchmark-binary metadata:
 
 ```sh
-python3 benchmark_suite/scripts/collect_metadata.py \
+python3 scripts/collect_metadata.py \
   --machine-id mac_m4_local \
-  --output benchmark_suite/results/mac_m4_local_metadata.json \
-  --summary-output benchmark_suite/results/mac_m4_local_metadata_summary.md \
+  --output results/mac_m4_local_metadata.json \
+  --summary-output results/mac_m4_local_metadata_summary.md \
   --compiler clang \
   --compiler /opt/homebrew/opt/llvm/bin/clang \
-  --binary benchmark_suite/bin/membench
+  --binary bin/membench
 ```
 
 The JSON file is the full machine-readable record. The Markdown summary is intended for quick review and report drafting. Sensitive hardware identifiers from `system_profiler` are redacted by default.

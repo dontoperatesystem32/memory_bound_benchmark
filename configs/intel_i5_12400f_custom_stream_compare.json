@@ -1,0 +1,11 @@
+{
+  "machine_id": "intel_i5_12400f",
+  "description": "Custom STREAM-style comparison matching the official STREAM baseline on the Intel Core i5-12400F.",
+  "experiment": {
+    "kernels": ["copy", "scale", "add", "triad"],
+    "elements": [20000000],
+    "threads": [1, 2, 4],
+    "repetitions": 3,
+    "strides": {}
+  }
+}

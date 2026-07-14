@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and run official STREAM with Homebrew LLVM/OpenMP, then normalize output."""
+"""Build and run official STREAM from this repository, then normalize output."""
 
 from __future__ import annotations
 
@@ -7,6 +7,14 @@ import argparse
 import os
 import subprocess
 from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_CLANG = (
+    "/opt/homebrew/opt/llvm/bin/clang"
+    if Path("/opt/homebrew/opt/llvm/bin/clang").exists()
+    else "clang"
+)
 
 
 def run(command: list[str], *, cwd: Path | None = None, env: dict[str, str] | None = None, stdout: Path | None = None) -> None:
@@ -19,23 +27,29 @@ def run(command: list[str], *, cwd: Path | None = None, env: dict[str, str] | No
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--machine-id", default="mac_m4_local")
-    parser.add_argument("--stream-dir", default="benchmark_suite/external/stream", type=Path)
-    parser.add_argument("--results-dir", default="benchmark_suite/results", type=Path)
-    parser.add_argument("--cc", default="/opt/homebrew/opt/llvm/bin/clang")
+    parser = argparse.ArgumentParser(
+        description="Build and run official STREAM using the benchmark repository workflow."
+    )
+    parser.add_argument("--machine-id", required=True)
+    parser.add_argument("--stream-dir", default=PROJECT_ROOT / "external/stream", type=Path)
+    parser.add_argument("--results-dir", default=PROJECT_ROOT / "results", type=Path)
+    parser.add_argument("--cc", default=DEFAULT_CLANG)
     parser.add_argument("--array-size", default=20_000_000, type=int)
     parser.add_argument("--ntimes", default=10, type=int)
     parser.add_argument("--threads", nargs="+", default=[1, 2, 4], type=int)
-    parser.add_argument("--normalized-output", default="benchmark_suite/results/stream_mac_m4_normalized.csv", type=Path)
+    parser.add_argument("--normalized-output", type=Path)
     args = parser.parse_args()
+
+    normalized_output = args.normalized_output or (
+        args.results_dir / f"stream_{args.machine_id}_normalized.csv"
+    )
 
     build_dir = args.stream_dir / "build"
     binary = build_dir / f"stream_{args.array_size}_{args.ntimes}"
     build_dir.mkdir(parents=True, exist_ok=True)
     args.results_dir.mkdir(parents=True, exist_ok=True)
-    if args.normalized_output.exists():
-        args.normalized_output.unlink()
+    if normalized_output.exists():
+        normalized_output.unlink()
 
     flags = [
         "-O3",
@@ -67,11 +81,11 @@ def main() -> int:
         run(
             [
                 "python3",
-                "benchmark_suite/scripts/normalize_stream.py",
+                str(PROJECT_ROOT / "scripts/normalize_stream.py"),
                 "--input",
                 str(raw_output),
                 "--output",
-                str(args.normalized_output),
+                str(normalized_output),
                 "--machine-id",
                 args.machine_id,
                 "--elements",
@@ -85,7 +99,7 @@ def main() -> int:
             ]
         )
 
-    print(f"Wrote normalized STREAM CSV to {args.normalized_output}")
+    print(f"Wrote normalized STREAM CSV to {normalized_output}")
     return 0
 
 
