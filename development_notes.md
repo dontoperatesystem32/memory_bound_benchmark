@@ -263,3 +263,24 @@ This file records implementation decisions, setup findings, validation results, 
 - Remaining warnings: Primarily four-thread stencil, strided, and small-Triad groups; these are retained and reported because macOS does not expose verifiable OpenMP processor affinity.
 - Generated `results/mac_m4_pilot_memory_sweep_summary.md` and 30 stride-separated median plots under `plots/mac_m4_pilot_memory_sweep/`.
 - Decision: Corrected shared configuration is approved for the Intel full sweep.
+
+### Intel full sweep and cross-machine pilot comparison
+
+- Received the corrected Intel full-sweep artifacts from the CachyOS x86-64 machine.
+- Validation: `results/intel_i5_12400f/intel_i5_12400f_pilot_memory_sweep.csv` contains 1,372 result rows plus the header, matching the corrected Mac sweep exactly.
+- Stability: The Intel full-sweep summary reports no workload groups above the 10% coefficient-of-variation threshold.
+- Plotting: Regenerated 30 stride-separated Intel pilot plots locally under `plots/intel_i5_12400f/intel_i5_12400f_pilot_memory_sweep/`.
+- Added `scripts/compare_machines.py` to compare two normalized CSV files by matched `(kernel, elements, stride, threads)` groups using repetition medians.
+- Generated `results/mac_m4_vs_intel_i5_12400f_pilot_comparison.csv` with 196 matched workload groups and no unmatched groups.
+- Generated `docs/cross_machine_pilot_analysis.md` as the first cross-machine pilot analysis artifact.
+- Initial observations: Large Triad on the Mac M4 saturates near 92-94 GB/s across one to four threads, while the Intel i5-12400F rises from about 29 GB/s at one thread to about 43 GB/s at four threads. Large strided traversal shows decreasing useful bandwidth as stride increases on both systems.
+- Interpretation limitation: These results validate the shared methodology and expose workload-specific memory behavior on two accessible systems. They should still be reported as pilot measurements on non-equivalent machines, not as a general ARM64-versus-x86-64 conclusion.
+
+### Interim report drafted and compiled
+
+- Created `interim_report/main.tex` according to the course interim-report outline.
+- Content sources: project proposal, methodology notes, development notes, machine metadata summaries, and `docs/cross_machine_pilot_analysis.md`.
+- Included report-native LaTeX figures and tables rather than external SVG plots, avoiding extra conversion dependencies.
+- Compiled with Tectonic using `tectonic -X compile --outdir build main.tex`.
+- Output: `interim_report/build/main.pdf`.
+- Verification: PDF is 8 pages, uses 11-point Times New Roman with 1.5 spacing, includes a title page, architecture/data-flow figure, selected result tables, Triad bandwidth figure, strided traversal figure, risks, deliverable revisions, and status assessment.
