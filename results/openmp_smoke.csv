@@ -1,4 +1,0 @@
-source_benchmark,machine_id,kernel,elements,bytes,stride,threads,repetition,runtime_sec,bandwidth_gbps,checksum,compiler,compiler_flags
-custom,mac_m4_local,triad,100000,2400000,1,4,1,0.000093000,25.806453,1116697.5160000001,clang 22.1.8 ,recorded_in_build_log_or_metadata
-custom,mac_m4_local,triad,100000,2400000,1,4,2,0.000094000,25.531914,1116697.5160000001,clang 22.1.8 ,recorded_in_build_log_or_metadata
-custom,mac_m4_local,triad,100000,2400000,1,4,3,0.000089000,26.966290,1116697.5160000001,clang 22.1.8 ,recorded_in_build_log_or_metadata

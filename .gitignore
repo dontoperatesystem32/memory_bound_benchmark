@@ -1,55 +1,40 @@
-# Prerequisites
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Build artifacts
+build/
+bin/
+external/stream/build/
 *.d
-
-# Object files
 *.o
-*.ko
 *.obj
-*.elf
-
-# Linker output
-*.ilk
-*.map
-*.exp
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
 *.a
 *.la
 *.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
 *.so
 *.so.*
 *.dylib
-
-# Executables
+*.dll
 *.exe
 *.out
-*.app
-*.i*86
-*.x86_64
-*.hex
-
-# Debug files
 *.dSYM/
-*.su
-*.idb
-*.pdb
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
 
-# debug information files
-*.dwo
+# Generated benchmark outputs
+results/*
+!results/.gitkeep
+plots/*
+!plots/.gitkeep
+
+# Local logs and scratch files
+*.log
+*.tmp
+tmp/
