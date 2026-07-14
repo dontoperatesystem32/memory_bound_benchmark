@@ -168,3 +168,11 @@ This file records implementation decisions, setup findings, validation results, 
 - Fix: Added `_POSIX_C_SOURCE 200112L` before includes in `src/main.c`.
 - Verification: Rebuilt successfully on macOS with Homebrew Clang/OpenMP after the change.
 - Next step: Pull/sync this fix on the CachyOS machine and rebuild with `make -C memory_bound_benchmark openmp CC=clang`.
+
+### `clock_gettime` declaration fixed for strict C builds
+
+- Context: After fixing `posix_memalign`, the CachyOS build failed in `src/timer.c` because `clock_gettime` and `CLOCK_MONOTONIC` were not declared.
+- Cause: Same strict C/POSIX feature-test macro issue on glibc/Linux.
+- Fix: Added `_POSIX_C_SOURCE 200112L` before includes in `src/timer.c`.
+- Verification: Rebuilt successfully on macOS with Homebrew Clang/OpenMP after the change.
+- Next step: Pull/sync the updated `src/timer.c` on CachyOS and rebuild.
