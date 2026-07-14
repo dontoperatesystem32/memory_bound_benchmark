@@ -39,7 +39,8 @@
 \vspace{0.8in}
 {\large Rufat Guliyev\par}
 \vspace{0.25in}
-{\large George Washington University\par}
+{\large The George Washington University\par}
+{\large ADA University\par}
 \vspace{0.25in}
 {\large CSCI 6918: Guided Research for Graduate Students II\par}
 \vfill
@@ -64,7 +65,9 @@ The workflow records runtime, effective bandwidth, speedup, scaling efficiency, 
 
 Several decisions changed from the original proposal as implementation progressed. First, the project now treats official STREAM as a first-class established benchmark instead of relying only on custom STREAM-style kernels. Second, the measurement design was revised to batch multiple kernel iterations inside each timed repetition, because early timing runs showed that small or sparse-stride cases could produce regions that were too short to be stable. Third, strided traversal was corrected to use an OpenMP reduction so that multi-thread results measure actual parallel work rather than a serial loop under a multi-thread configuration. Fourth, the experiment runner now uses a shared configuration for both machines, which improves comparability at the pipeline level.
 
-The main technologies are C, OpenMP, LLVM/Clang, Python, CSV files, and LaTeX. On macOS, Homebrew LLVM/Clang and \texttt{libomp} are used because Apple Clang does not provide the needed OpenMP support by default. On the Intel desktop, Clang 22.1.8 links against \texttt{libomp.so}. Python scripts drive experiments, normalize outputs, collect metadata, summarize results, compare machines, and generate plots. The report itself is compiled with Tectonic.
+The main technologies are C, OpenMP, LLVM/Clang, Python, CSV files, and LaTeX. On macOS, Homebrew LLVM/Clang and \texttt{libomp} are used because Apple Clang does not provide the needed OpenMP support by default. On the Intel desktop, Clang 22.1.8 links against \texttt{libomp.so}. Python scripts drive experiments, normalize outputs, collect metadata, summarize results, compare machines, and generate plots. The report itself is compiled with Tectonic. The source code repository is available at \url{https://github.com/dontoperatesystem32/memory_bound_benchmark}.
+
+The Intel desktop experiments are run remotely rather than at the physical machine. The access path uses a Raspberry Pi on the home network for VPN access, Wake-on-LAN support, and SSH into the desktop once it is powered on. This setup is not a research contribution, but it is useful project infrastructure: it makes the x86-64 pilot platform available during the course without requiring physical access and helps keep the experiment workflow repeatable.
 
 \section{Software Architecture}
 
@@ -173,8 +176,10 @@ Figure~\ref{fig:triad-bars} shows large Triad bandwidth by thread count. The Mac
   \fill[orange!75] (3.30,0) rectangle (3.70,32.04);
   \fill[blue!60] (5.05,0) rectangle (5.45,94.09);
   \fill[orange!75] (5.50,0) rectangle (5.90,42.54);
-  \node[anchor=west] at (4.5,108) {\small \tikz\fill[blue!60] (0,0) rectangle (0.25,0.12); Mac M4};
-  \node[anchor=west] at (4.5,98) {\small \tikz\fill[orange!75] (0,0) rectangle (0.25,0.12); Intel i5-12400F};
+  \filldraw[blue!60, draw=black] (4.45,105.5) rectangle (4.80,110.0);
+  \node[anchor=west] at (4.92,108) {\small Mac M4};
+  \filldraw[orange!75, draw=black] (4.45,95.5) rectangle (4.80,100.0);
+  \node[anchor=west] at (4.92,98) {\small Intel i5-12400F};
 \end{tikzpicture}
 \caption{Large working-set Triad effective bandwidth at 256 MiB.}
 \label{fig:triad-bars}
@@ -203,8 +208,12 @@ Figure~\ref{fig:stride-line} shows the effect of stride on useful bandwidth at t
   \foreach \x/\y in {1/15.05,2/10.97,4/7.12,8/3.69,16/2.22,32/1.84} {
     \fill[orange!85] (\x,\y) circle (0.22);
   }
-  \node[anchor=west] at (18,16.8) {\small \tikz\draw[blue!70, thick] (0,0) -- (0.35,0); Mac M4};
-  \node[anchor=west] at (18,15.2) {\small \tikz\draw[orange!85, thick] (0,0) -- (0.35,0); Intel i5-12400F};
+  \draw[blue!70, line width=1.4pt] (18,16.8) -- (20.5,16.8);
+  \filldraw[blue!70, draw=black] (19.25,16.8) circle (0.32);
+  \node[anchor=west] at (21.0,16.8) {\small Mac M4};
+  \draw[orange!85, line width=1.4pt] (18,15.2) -- (20.5,15.2);
+  \filldraw[orange!85, draw=black] (19.25,15.2) circle (0.32);
+  \node[anchor=west] at (21.0,15.2) {\small Intel i5-12400F};
 \end{tikzpicture}
 \caption{Useful bandwidth for one-thread strided traversal at 256 MiB.}
 \label{fig:stride-line}
@@ -232,7 +241,7 @@ Another revision is that compiler consistency has become a formal part of the de
 
 The main scientific risk remains hardware inequality. The Apple M4 MacBook Air and Intel Core i5-12400F desktop are useful pilot platforms, but they are not controlled equivalents. The report therefore avoids broad architecture claims. It reports workload-specific behavior, records machine metadata, and treats the local comparison as validation of a portable methodology.
 
-Measurement noise is another important risk. Laptop thermals, background processes, power management, OS scheduler behavior, and OpenMP thread placement can affect results. This risk is visible in the Mac full sweep, where 11 of 196 groups exceeded the 10 percent coefficient-of-variation threshold. Most of those warnings occur in four-thread stencil or strided cases. The Intel sweep was more stable, with zero groups above the threshold. The mitigation is to report medians, track coefficient of variation, avoid hiding unstable groups, and document macOS affinity limitations.
+Measurement noise is another important risk. Laptop thermals, background processes, power management, OS scheduler behavior, and OpenMP thread placement can affect results. This risk is visible in the Mac full sweep, where 11 of 196 groups exceeded the 10 percent coefficient-of-variation threshold. Most of those warnings occur in four-thread stencil or strided cases. One practical reason is that the MacBook Air was also being used interactively during parts of the measurement period, with normal desktop activity such as a browser, music, and other background processes present. The Intel desktop, by contrast, was accessed remotely while no one was physically using it, so the benchmark process had a cleaner and more idle run environment. The mitigation is to report medians, track coefficient of variation, avoid hiding unstable groups, document run-environment differences, and avoid interpreting variation differences as architectural properties.
 
 OpenMP portability remains a practical risk. The Mac requires Homebrew LLVM/Clang and \texttt{libomp}; Apple Clang alone is insufficient for the intended OpenMP experiments. The Intel system uses Clang and \texttt{libomp.so}. This risk has been mitigated for the current pilot machines, but future machines will still require explicit compiler and runtime documentation.
 

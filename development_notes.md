@@ -284,3 +284,18 @@ This file records implementation decisions, setup findings, validation results, 
 - Compiled with Tectonic using `tectonic -X compile --outdir build main.tex`.
 - Output: `interim_report/build/main.pdf`.
 - Verification: PDF is 8 pages, uses 11-point Times New Roman with 1.5 spacing, includes a title page, architecture/data-flow figure, selected result tables, Triad bandwidth figure, strided traversal figure, risks, deliverable revisions, and status assessment.
+
+### Interim report revision: run environment and remote access
+
+- Updated the interim report to explain that the Mac full sweep had higher variation partly because the Mac was also being used interactively during measurement, with browser, music, and other background activity.
+- Clarified that the Intel desktop was accessed remotely while idle, so its benchmark run environment was cleaner than the Mac run environment.
+- Added a concise mention of the Raspberry Pi VPN, Wake-on-LAN, and SSH setup as feasibility infrastructure for remote x86-64 experiments, not as a research contribution.
+- Recompiled `interim_report/build/main.pdf`; the report remains 8 pages.
+
+### Interim report revision: title page, legends, and source link
+
+- Added ADA University to the report title page to reflect the dual-degree program.
+- Corrected the university name on the title page to `The George Washington University`.
+- Added a concise GitHub source-code reference to the technical approach section with the full visible URL: `https://github.com/dontoperatesystem32/memory_bound_benchmark`.
+- Enlarged chart legend markers for the Triad and strided traversal figures so the color labels are visible in the compiled PDF.
+- Recompiled `interim_report/build/main.pdf`; the report remains 8 pages.
