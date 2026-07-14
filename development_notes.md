@@ -236,3 +236,30 @@ This file records implementation decisions, setup findings, validation results, 
 - Verified: batched byte counts, warm-up/iteration fields, recorded compiler flags, parallel strided checksums, repository-relative runner behavior, and median plot aggregation.
 - Remaining variability: several short/cache-resident Mac groups still exceed 10% coefficient of variation because thread placement cannot be verified and three smoke repetitions are intentionally limited.
 - Full-sweep adjustment: increased timed batches to approximately 3 GB of useful traffic for contiguous multi-stream kernels, retained seven independent repetitions, and added deterministic job shuffling with seed `20260714` to distribute order and thermal effects.
+
+### Cross-machine gate passed
+
+- Intel gate: 54 result rows with the same 15-column schema and workload descriptors as the Mac gate; all nine expected stride-separated plots were transferred successfully.
+- Correctness: Maximum relative checksum spread across each workload is below approximately `1e-12` on both machines.
+- Intel stability: Triad groups remain below 2.5% CV; contiguous traversal remains below 3%; the only group above 10% is large stride-16 traversal at four threads (15.7% CV).
+- Scaling example: For 8,388,608 elements, Intel median Triad bandwidth increases from 29.50 GB/s at one thread to 43.86 GB/s at four threads; Mac increases from 91.02 GB/s to 96.91 GB/s, indicating much earlier saturation for this workload.
+- Decision: The compact gate passes. The full 1,372-row pilot sweep is approved on both machines using the shared configuration.
+- Added `scripts/summarize_results.py` to report repetition medians, coefficient of variation, runtime speedup, scaling efficiency, and groups above a configurable variation threshold.
+- Added `docs/pipeline_v2_gate_analysis.md` for interim-report use.
+
+### Full-sweep timing diagnostic
+
+- First Mac full sweep completed all 1,372 rows with seven repetitions per group, finite values, and valid checksums.
+- Quality report flagged 30 of 196 groups above 10% CV; sparse small-working-set stride groups dominated the warnings, including one 79.8% outlier group.
+- Cause: Base iterations were scaled by array size but not by stride, so stride-16 and stride-32 loops performed far fewer useful accesses and retained short timed regions.
+- Correction: Added `scale_iterations_by_stride`; strided jobs now multiply base iterations by stride, keeping measured useful-access counts broadly comparable without changing working-set size.
+- Decision: Rerun the Mac full sweep with corrected stride timing before beginning the Intel full sweep.
+
+### Corrected Mac full sweep accepted
+
+- Completed the corrected 1,372-row Mac sweep: 196 workload groups, seven repetitions per group, 15 normalized columns, finite values, and valid checksums.
+- Timing floor: The minimum timed repetition is 10.49 ms after scaling strided iterations, eliminating sub-millisecond sparse-stride samples.
+- Variation improvement: Groups above 10% CV decreased from 30 to 11. The previous 79.8% sparse-stride outlier group no longer appears.
+- Remaining warnings: Primarily four-thread stencil, strided, and small-Triad groups; these are retained and reported because macOS does not expose verifiable OpenMP processor affinity.
+- Generated `results/mac_m4_pilot_memory_sweep_summary.md` and 30 stride-separated median plots under `plots/mac_m4_pilot_memory_sweep/`.
+- Decision: Corrected shared configuration is approved for the Intel full sweep.

@@ -27,6 +27,9 @@ Preferred architecture-neutral metrics include runtime, effective bandwidth, spe
 
 Each CSV row represents one independent repetition. Array initialization and the number of kernel calls recorded in `warmups` occur before the timed region. The `iterations` field records how many kernel calls are batched inside that timed region; `bytes` is the total useful byte count across the batch. Warm-up calls reduce first-use effects, while batching keeps cache-resident measurements long enough to reduce timer and OpenMP-launch overhead without changing the working set.
 
+For strided traversal, the pilot configuration multiplies the base timed-iteration count by the stride. A stride-
+\(s\) loop visits approximately \(1/s\) of the elements per pass, so this scaling keeps the number of useful measured accesses broadly comparable across stride values. The CSV records the resulting actual iteration count.
+
 Summaries and plots use the median across independent repetitions. Reports should also include variation, preferably the coefficient of variation or an interquartile range. Very short measurements and groups with high variation must be treated as diagnostic rather than conclusive.
 
 The full pilot configuration uses a recorded fixed seed to shuffle kernel/size/thread jobs. Both machines therefore execute the same reproducible order, while heat, background activity, and frequency changes are less likely to affect one contiguous workload family exclusively.

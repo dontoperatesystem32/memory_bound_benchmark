@@ -10,6 +10,7 @@
     "threads": [1, 2, 4],
     "repetitions": 3,
     "warmups": 1,
+    "scale_iterations_by_stride": true,
     "iterations": {
       "1048576": 32,
       "8388608": 4

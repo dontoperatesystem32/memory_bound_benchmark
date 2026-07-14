@@ -95,6 +95,10 @@ python3 scripts/run_experiments.py \
 python3 scripts/plot_results.py \
   --input results/intel_i5_12400f_pipeline_v2_smoke.csv \
   --outdir plots/intel_i5_12400f_pipeline_v2_smoke
+
+python3 scripts/summarize_results.py \
+  --input results/intel_i5_12400f_pipeline_v2_smoke.csv \
+  --output results/intel_i5_12400f_pipeline_v2_smoke_summary.md
 ```
 
 Inspect the full pilot matrix without running it:

@@ -41,6 +41,9 @@ def main() -> int:
     warmups = int(config["experiment"].get("warmups", 1))
     strides = config["experiment"].get("strides", {"strided": 16})
     iterations = config["experiment"].get("iterations", 1)
+    scale_iterations_by_stride = bool(
+        config["experiment"].get("scale_iterations_by_stride", False)
+    )
     kernel_threads = config["experiment"].get("kernel_threads", {})
     machine_id = args.machine_id or config.get("machine_id")
     if not machine_id:
@@ -69,7 +72,10 @@ def main() -> int:
             selected_threads = kernel_threads.get(kernel, threads)
             for stride in strides_for(kernel):
                 for thread_count in selected_threads:
-                    jobs.append((kernel, int(n), int(stride), int(thread_count), iterations_for(int(n))))
+                    iteration_count = iterations_for(int(n))
+                    if kernel == "strided" and scale_iterations_by_stride:
+                        iteration_count *= int(stride)
+                    jobs.append((kernel, int(n), int(stride), int(thread_count), iteration_count))
 
     shuffle_seed = config["experiment"].get("shuffle_seed")
     if shuffle_seed is not None:
