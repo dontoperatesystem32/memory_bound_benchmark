@@ -1,0 +1,5 @@
+build/
+bin/
+external/stream/build/
+__pycache__/
+scripts/__pycache__/

@@ -1,0 +1,13 @@
+source_benchmark,machine_id,kernel,elements,bytes,stride,threads,repetition,runtime_sec,bandwidth_gbps,checksum,compiler,compiler_flags
+stream,mac_m4_local,copy,20000000,320000000,1,1,best,0.003442,92.9679,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,scale,20000000,320000000,1,1,best,0.003519,90.93339999999999,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,add,20000000,480000000,1,1,best,0.005098,94.157,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,triad,20000000,480000000,1,1,best,0.005112,93.8936,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,copy,20000000,320000000,1,2,best,0.003062,104.5065,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,scale,20000000,320000000,1,2,best,0.003320,96.3862,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,add,20000000,480000000,1,2,best,0.004973,96.5225,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,triad,20000000,480000000,1,2,best,0.004920,97.56089999999999,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,copy,20000000,320000000,1,4,best,0.003091,103.53110000000001,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,scale,20000000,320000000,1,4,best,0.003151,101.557,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,add,20000000,480000000,1,4,best,0.004987,96.25019999999999,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10
+stream,mac_m4_local,triad,20000000,480000000,1,4,best,0.004939,97.1888,not_reported,Homebrew clang version 22.1.8,-O3 -fopenmp -DSTREAM_ARRAY_SIZE=20000000 -DNTIMES=10

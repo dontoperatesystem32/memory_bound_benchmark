@@ -1,0 +1,14 @@
+{
+  "machine_id": "mac_m4_local",
+  "description": "Local Apple Silicon Mac validation configuration. Update metadata before reporting results.",
+  "experiment": {
+    "kernels": ["triad", "reduction", "strided"],
+    "elements": [65536, 1048576, 8388608],
+    "threads": [1, 2, 4],
+    "repetitions": 3,
+    "strides": {
+      "strided": 16
+    }
+  }
+}
+

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560">
+<rect width="100%" height="100%" fill="white"/>
+<text x="450.0" y="30" text-anchor="middle" font-family="Arial" font-size="20">reduction: runtime vs. working-set size</text>
+<line x1="90" y1="480" x2="640" y2="480" stroke="black"/>
+<line x1="90" y1="60" x2="90" y2="480" stroke="black"/>
+<line x1="90.0" y1="60" x2="90.0" y2="480" stroke="#e6e6e6"/>
+<text x="90.0" y="504" text-anchor="middle" font-family="Arial" font-size="12">-4.58</text>
+<line x1="90" y1="60.0" x2="640" y2="60.0" stroke="#e6e6e6"/>
+<text x="80" y="64.0" text-anchor="end" font-family="Arial" font-size="12">0.00494</text>
+<line x1="200.0" y1="60" x2="200.0" y2="480" stroke="#e6e6e6"/>
+<text x="200.0" y="504" text-anchor="middle" font-family="Arial" font-size="12">10.2</text>
+<line x1="90" y1="144.0" x2="640" y2="144.0" stroke="#e6e6e6"/>
+<text x="80" y="148.0" text-anchor="end" font-family="Arial" font-size="12">0.00388</text>
+<line x1="310.0" y1="60" x2="310.0" y2="480" stroke="#e6e6e6"/>
+<text x="310.0" y="504" text-anchor="middle" font-family="Arial" font-size="12">24.9</text>
+<line x1="90" y1="228.0" x2="640" y2="228.0" stroke="#e6e6e6"/>
+<text x="80" y="232.0" text-anchor="end" font-family="Arial" font-size="12">0.00282</text>
+<line x1="420.0" y1="60" x2="420.0" y2="480" stroke="#e6e6e6"/>
+<text x="420.0" y="504" text-anchor="middle" font-family="Arial" font-size="12">39.6</text>
+<line x1="90" y1="312.0" x2="640" y2="312.0" stroke="#e6e6e6"/>
+<text x="80" y="316.0" text-anchor="end" font-family="Arial" font-size="12">0.00176</text>
+<line x1="530.0" y1="60" x2="530.0" y2="480" stroke="#e6e6e6"/>
+<text x="530.0" y="504" text-anchor="middle" font-family="Arial" font-size="12">54.3</text>
+<line x1="90" y1="396.0" x2="640" y2="396.0" stroke="#e6e6e6"/>
+<text x="80" y="400.0" text-anchor="end" font-family="Arial" font-size="12">0.000708</text>
+<line x1="640.0" y1="60" x2="640.0" y2="480" stroke="#e6e6e6"/>
+<text x="640.0" y="504" text-anchor="middle" font-family="Arial" font-size="12">69.1</text>
+<line x1="90" y1="480.0" x2="640" y2="480.0" stroke="#e6e6e6"/>
+<text x="80" y="484.0" text-anchor="end" font-family="Arial" font-size="12">-0.000349</text>
+<polyline points="127.9,449.4 183.9,407.5 602.1,89.0" fill="none" stroke="#1f77b4" stroke-width="2.5"/>
+<circle cx="127.9" cy="449.4" r="4" fill="#1f77b4"/>
+<circle cx="183.9" cy="407.5" r="4" fill="#1f77b4"/>
+<circle cx="602.1" cy="89.0" r="4" fill="#1f77b4"/>
+<line x1="675" y1="60" x2="699" y2="60" stroke="#1f77b4" stroke-width="3"/>
+<text x="709" y="65" font-family="Arial" font-size="13">1 threads</text>
+<polyline points="127.9,450.4 183.9,428.8 602.1,266.9" fill="none" stroke="#d62728" stroke-width="2.5"/>
+<circle cx="127.9" cy="450.4" r="4" fill="#d62728"/>
+<circle cx="183.9" cy="428.8" r="4" fill="#d62728"/>
+<circle cx="602.1" cy="266.9" r="4" fill="#d62728"/>
+<line x1="675" y1="84" x2="699" y2="84" stroke="#d62728" stroke-width="3"/>
+<text x="709" y="89" font-family="Arial" font-size="13">2 threads</text>
+<polyline points="127.9,451.0 183.9,437.7 602.1,340.2" fill="none" stroke="#2ca02c" stroke-width="2.5"/>
+<circle cx="127.9" cy="451.0" r="4" fill="#2ca02c"/>
+<circle cx="183.9" cy="437.7" r="4" fill="#2ca02c"/>
+<circle cx="602.1" cy="340.2" r="4" fill="#2ca02c"/>
+<line x1="675" y1="108" x2="699" y2="108" stroke="#2ca02c" stroke-width="3"/>
+<text x="709" y="113" font-family="Arial" font-size="13">4 threads</text>
+<text x="365.0" y="535" text-anchor="middle" font-family="Arial" font-size="15">Input array size (MiB)</text>
+<text transform="translate(24 270.0) rotate(-90)" text-anchor="middle" font-family="Arial" font-size="15">Runtime (s)</text>
+</svg>

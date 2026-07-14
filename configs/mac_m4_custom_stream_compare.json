@@ -1,0 +1,11 @@
+{
+  "machine_id": "mac_m4_local",
+  "description": "Custom STREAM-style kernels for comparison with official STREAM baseline.",
+  "experiment": {
+    "kernels": ["copy", "scale", "add", "triad"],
+    "elements": [20000000],
+    "threads": [1, 2, 4],
+    "repetitions": 3
+  }
+}
+

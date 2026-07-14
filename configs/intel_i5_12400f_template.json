@@ -1,0 +1,14 @@
+{
+  "machine_id": "intel_i5_12400f",
+  "description": "Template for the Intel Core i5-12400F desktop. Copy and adjust after compiler/OpenMP setup is known.",
+  "experiment": {
+    "kernels": ["triad", "reduction", "strided"],
+    "elements": [65536, 1048576, 8388608],
+    "threads": [1, 2, 4],
+    "repetitions": 3,
+    "strides": {
+      "strided": 16
+    }
+  }
+}
+
